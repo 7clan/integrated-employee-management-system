@@ -1,0 +1,145 @@
+/* General body styling */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Headings */
+h1, h2 {
+    color: #1a202c;
+    margin-bottom: 10px;
+}
+
+/* Paragraphs */
+p {
+    font-size: 1rem;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+/* Lists */
+ul {
+    list-style-type: none; /* remove default bullets */
+    padding: 0;
+    margin: 0 0 20px 0;
+}
+
+ul li {
+    background-color: #fff;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border-left: 5px solid #4a90e2; /* default card border */
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* Card hover effect */
+ul li:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Highlighted card for skill > 70 */
+ul li .highlight {
+    border-left-color: #f39c12;
+}
+
+/* Links */
+a {
+    color: #4a90e2;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+/* Pagination container */
+.pagination {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    gap: 5px;
+}
+
+/* All page links (numbers and Prev/Next) */
+.page-item .page-link {
+    display: inline-block;
+    padding: 6px 12px;      /* adjust size */
+    font-size: 0.85rem;     /* smaller font */
+    background-color: #4a90e2;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+/* Hover effect */
+.page-item .page-link:hover {
+    background-color: #357ABD;
+}
+
+/* Active page */
+.page-item.active .page-link {
+    background-color: #f39c12;
+    color: #fff;
+}
+
+/* Disabled links (like Previous/Next when not clickable) */
+.page-item.disabled .page-link {
+    background-color: #ddd;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* Button style */
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #4a90e2;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.btn:hover {
+    background-color: #357ABD;
+}
+
+/* Layout wrapper */
+x-layout {
+    display: block;
+    max-width: 800px;
+    margin: 0 auto 40px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Register form container */
+
+.register-form {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.gg {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #d62020ff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}

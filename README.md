@@ -1,61 +1,112 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Integrated Employee Management System + Local RAG Assistant
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This project combines a Laravel-based employee-management application with a **local retrieval-augmented generation (RAG) extension** for answering questions from internal policy documents.
 
-## About Laravel
+The employee-management application came first. The RAG functionality was added later as an independent learning and engineering extension after professional exposure to AI-assisted document search. It should therefore be read as a separate technical progression rather than as work completed during the original internship.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## RAG workflow
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+The current implementation follows a straightforward, inspectable retrieval pipeline:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```text
+PDF policy document
+      ↓
+Text extraction
+      ↓
+~200-word chunks
+      ↓
+Ollama embedding model
+(mxbai-embed-large)
+      ↓
+PostgreSQL + pgvector
+      ↓
+Question embedding
+      ↓
+Top-k cosine-distance retrieval
+      ↓
+Similarity threshold
+      ↓
+Strictly grounded prompt
+      ↓
+Local Gemma generation
+      ↓
+Answer + retrieved sources
+```
 
-## Learning Laravel
+### Document ingestion
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+The `rag:ingest` command:
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- parses a PDF with `Smalot\PdfParser`
+- normalizes whitespace
+- splits the text into approximately 200-word chunks
+- creates embeddings through the local Ollama `/api/embed` endpoint using `mxbai-embed-large`
+- stores each chunk, source name, chunk index, and vector in PostgreSQL/pgvector
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Retrieval
 
-## Laravel Sponsors
+For each question, the controller:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- creates a 1024-dimensional query embedding
+- retrieves the four closest chunks using pgvector cosine distance (`<=>`)
+- applies a configurable similarity-distance gate
+- refuses to generate a document-grounded answer when the best retrieved match is too weak
 
-### Premium Partners
+The current threshold is an engineering starting point and is explicitly marked in the source as something to tune rather than as a scientifically validated optimum.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Grounded answer generation
 
-## Contributing
+The generation prompt instructs the model to answer **only from retrieved context** and to say that it does not know when the answer is absent from the documents. Generation currently uses a local `gemma3:4b` model through Ollama with a low temperature.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+The API response includes source metadata, chunk indices, retrieval distances, and previews so the retrieved evidence can be inspected alongside the answer.
 
-## Code of Conduct
+## Why I built this extension
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+My earlier software work had exposed me to AI-assisted semantic search over company policy material. After that experience, I wanted to understand what was happening beyond the chat interface, so I independently implemented the retrieval pipeline itself: parsing, chunking, embeddings, vector storage, nearest-neighbor retrieval, relevance gating, context construction, and constrained generation.
 
-## Security Vulnerabilities
+That progression is what made information retrieval and grounded language-model systems a serious technical interest rather than simply another API integration.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Employee-management application
 
-## License
+The underlying application is a Laravel/PHP employee-management system with conventional web-application concerns such as:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- employee and organizational records
+- authentication and authorization
+- role-based application behavior
+- PostgreSQL-backed persistence
+- modular Laravel application structure
+
+The RAG layer complements those conventional application functions; it does not replace them.
+
+## Technology
+
+- PHP / Laravel
+- PostgreSQL
+- pgvector
+- Ollama
+- `mxbai-embed-large` embeddings
+- Gemma local generation
+- PDF text extraction with `smalot/pdfparser`
+
+## Key source files
+
+```text
+app/Console/Commands/RagIngest.php
+app/Http/Controllers/RagController.php
+```
+
+The implementation is intentionally compact so the complete retrieval path can be inspected without a large framework hiding the core logic.
+
+## Limitations and next steps
+
+This is an engineering prototype rather than a published RAG benchmark. Useful next steps would include:
+
+- systematic evaluation of chunk size and overlap
+- retrieval precision/recall evaluation on a labeled question set
+- reranking experiments
+- calibrated similarity thresholds
+- citation-to-sentence verification
+- comparisons across embedding models
+- tests for adversarial or conflicting documents
+
+Those are also the kinds of questions I want to approach more rigorously in graduate study.
